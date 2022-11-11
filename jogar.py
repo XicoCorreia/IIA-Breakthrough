@@ -1,4 +1,4 @@
-##Versão 11 Nov 2022 10:26
+##Versão 11 Nov 2022 15:07
 
         
 from random import *
@@ -36,12 +36,12 @@ def joga11(game, jog1, jog2):
     while not game.terminal_test(estado):
  #       estado.display()
         jogada = proxjog.fun(game, estado)
-        p = game.to_move(estado)
+#        p = game.to_move(estado)
         estado=game.result(estado,jogada)
         lista_jogadas.append(jogada)
         proxjog = jog2 if proxjog == jog1 else jog1
     #p jogou e ganhou
-    return ((jog1.nome,jog2.nome),lista_jogadas, game.utility(estado,p))
+    return ((jog1.nome,jog2.nome),lista_jogadas, game.utility(estado,1))
 
 from func_timeout import func_timeout, FunctionTimedOut
 
@@ -61,12 +61,12 @@ def joga11com_timeout(game,jog1, jog2, nsec):
         if jogada == None:
             return ((jog1.nome,jog2.nome),lista_jogadas, -1 if proxjog==jog1 else 1)
         else:
-            p = game.to_move(estado)
+ #           p = game.to_move(estado)
             estado=game.result(estado,jogada)
             lista_jogadas.append(jogada)
             proxjog = jog2 if proxjog == jog1 else jog1
         #p jogou e ganhou
-    return ((jog1.nome,jog2.nome),lista_jogadas, game.utility(estado,p))
+    return ((jog1.nome,jog2.nome),lista_jogadas, game.utility(estado,1))
 
 def jogaNN(game, listaJog, listaAdv, nsec=1):
     ### devolve uma lista de tuplos da forma (j1, j2, (lista de jogadas, vencedor))
