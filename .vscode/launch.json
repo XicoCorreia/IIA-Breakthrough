@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "name": "Python: Test JogoBT",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "python": "${command:python.interpreterPath}",
+            "args": [
+                "jogobt_test.py"
+            ]
+        }
+    ],
+}
