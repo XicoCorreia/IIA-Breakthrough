@@ -1,4 +1,4 @@
-##Versão 11 Nov 2022 15:07
+##Versão 16 Nov 2022 11:56
 
         
 from random import *
@@ -11,7 +11,7 @@ class Jogador():
         self.nome = nome
         self.fun = fun
     def display(self):
-        print(nome+" ")
+        print(self.nome+" ")
 
 
 # Classe JogadorAlfaBeta 
@@ -21,7 +21,7 @@ class JogadorAlfaBeta(Jogador):
         self.nome = nome
         self.fun = lambda game, state: alphabeta_cutoff_search_new(state,game,depth,eval_fn=fun_eval)
     def display(self):
-        print(nome+" ")
+        print(self.nome+" ")
 
 
 from jogos import *
@@ -76,9 +76,81 @@ def jogaNN(game, listaJog, listaAdv, nsec=1):
         for adv in listaAdv:
             if jog != adv:
                 j +=1
-                lista_jogos.append(joga11com_timeout(game, jog,adv, nsec))
-                print(j,jog.nome, adv.nome)
+                res = joga11com_timeout(game, jog, adv, nsec)
+                lista_jogos.append(res)
+                ((a,b),_,d) = res
+                print(j,jog.nome, adv.nome, "--vencedor=", a if d==1 else b)
     return lista_jogos
+
+
+
+############-----------UIUI--------------------
+# máquina de jogar 11 com jogos de formulação independente. 
+# gCore serve para manter as coisas fiscalizadas
+##########  para ser independente dos jogos deveria devolver um método em string ou um atributo
+def uiui_joga11(gameJog1, jog1, gameJog2, jog2, gCore):
+    ### gameJog1 e gameJog2 são as classes com as formulações dos jogos dos respectivos jogadores 
+    ### jog1 e jog2 são jogadores com funções que dado um estado do jogo devolvem a jogada que escolheram
+    ### devolve uma lista de jogadas e o resultado 1 se W ganha -1 se B ganha
+    estadoCore=gCore.initial
+    gJog1=gameJog1()
+    estadoJog1=gJog1.initial
+    gJog2=gameJog2()
+    estadoJog2=gJog2.initial
+    proxjog = jog1
+    lista_jogadas=[]
+    while not gCore.terminal_test(estadoCore):
+        #print('Real Board-------------------')
+        #gCore.display(estadoCore)
+        #gJog1.display(estadoJog1)
+        #gJog2.display(estadoJog2) 
+        #print('Possible actions:',gJog2.actions(estadoJog2))
+        if jog1==proxjog:
+            jogada = proxjog.fun(gJog1, estadoJog1)
+        else:
+            jogada = proxjog.fun(gJog2, estadoJog2)
+        #print(jogada)
+        estadoJog1=gJog1.result(estadoJog1,jogada)
+        estadoJog2=gJog2.result(estadoJog2,jogada)
+        estadoCore=gCore.result(estadoCore,jogada)
+        lista_jogadas.append(jogada)
+        proxjog = jog2 if proxjog == jog1 else jog1
+    return ((jog1.nome,jog2.nome),lista_jogadas, gCore.utility(estadoCore, 1))
+
+
+#############
+# máquina de jogar 1x1 com jogos de formulação independente e tempo limitado
+# gCore serve para manter as coisas fiscalizadas
+##########  para ser independente dos jogos deveria devolver um método em string ou um atributo
+def uiui_joga11com_timeout(gameJog1, jog1, gameJog2, jog2, gCore,nsec=10):
+    #print('TENHO',nsec,'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')
+    ### jog1 e jog2 são jogadores com funções que dado um estado do jogo devolvem a jogada que escolheram
+    ### devolve uma lista de jogadas e o resultado 1 se S ganha
+    estadoCore=gCore.initial
+    gJog1=gameJog1()
+    estadoJog1=gJog1.initial
+    gJog2=gameJog2()
+    estadoJog2=gJog2.initial
+    proxjog = jog1
+    lista_jogadas=[]
+    while not gCore.terminal_test(estadoCore):
+        try:
+            (game,estado)=(gJog1,estadoJog1) if proxjog == jog1 else (gJog2,estadoJog2)
+            ReturnedValue = func_timeout(nsec, proxjog.fun, args=(game, estado))
+        except FunctionTimedOut:
+            print("pim!", proxjog.nome)
+            ReturnedValue = None    
+        jogada = ReturnedValue
+        if jogada == None or jogada not in gCore.actions(estadoCore): ##verificação adicional, defensiva
+            return ((jog1.nome,jog2.nome),lista_jogadas, -1 if proxjog == jog1 else 1)
+        #print(jogada)
+        estadoJog1=gJog1.result(estadoJog1,jogada)
+        estadoJog2=gJog2.result(estadoJog2,jogada)
+        estadoCore=gCore.result(estadoCore,jogada)
+        lista_jogadas.append(jogada)
+        proxjog = jog2 if proxjog == jog1 else jog1
+    return ((jog1.nome,jog2.nome),lista_jogadas, gCore.utility(estadoCore, 1))
+
 
 
 
@@ -101,7 +173,7 @@ def mostraJogo(game, logjog, verbose = False, step_by_step=False):
             print()
     if verbose:
         game.display(estado)
-    print('Score:',estado.score)
+    print('Ganham as Whites' if game.utility(estado,1)==1 else 'Ganham as Blacks')
 
 
 #### função para fazer campeonatos e construir a tabela final
