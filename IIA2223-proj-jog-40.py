@@ -6,7 +6,13 @@
 #  55955 - Alexandre Fonseca
 
 from functools import reduce
-from jogos import Game, GameState
+from jogos import (
+    Game,
+    GameState,
+    random_player,
+    alphabeta_cutoff_search_new,
+)
+from jogar import faz_campeonato, JogadorAlfaBeta, Jogador
 
 
 class EstadoBT_40(GameState):
@@ -81,20 +87,59 @@ class JogoBT_40(Game):
 
         return EstadoBT_40(
             to_move=to_move,
-            utility=self.compute_utility(board, move, to_move),
+            utility=self.compute_utility(move, state.to_move),
             board=board,
         )
 
     def terminal_test(self, state: EstadoBT_40):
-        to_move, _, board, _ = state
-        opponent, row = ("B", 1) if to_move == 1 else ("W", 8)
-        return any(board.get((col, row)) == opponent for col in "abcdefgh")
+        return state.utility != 0 or len(self.actions(state)) == 0
 
     def utility(self, state: EstadoBT_40, player):
-        # Player 1 (W): 1
-        # Player 2 (B): -1
+        # W: 1, B: -1
         return state.utility if player == 1 else -state.utility
 
-    def compute_utility(self, board, move, player):
-        # TODO
-        return 0
+    def compute_utility(self, move, player):
+        _, (_, row) = move.split("-")
+        if int(row) != 1 and int(row) != 8:
+            return 0
+        return 1 if player == 1 else -1
+
+
+def f_aval_belarmino(estado: EstadoBT_40, jogador):
+    player = "W" if jogador == 1 else "B"
+    pieces = [row for (_, row), val in estado.board.items() if val == player]
+    res = 0
+    if jogador == 1:
+        for i in pieces:
+            res += i**i
+    else:
+        for i in pieces:
+            j = 9 - i
+            res += j**j
+    return res
+
+
+class JogadorAlfaBetaAlt(Jogador):  # faz só utility()
+    def __init__(self, nome, depth=4):
+        super().__init__(
+            nome,
+            lambda game, state: alphabeta_cutoff_search_new(
+                state,
+                game,
+                depth,
+                eval_fn=game.utility,
+            ),
+        )
+
+    def display(self):
+        print(self.nome + " ")
+
+
+jogo = JogoBT_40()
+j1 = JogadorAlfaBeta("Belarmino", 1, f_aval_belarmino)  # atualmente depth = 1
+j2 = Jogador("Random 1", random_player)
+j3 = Jogador("Random 2", random_player)
+j4 = Jogador("Random 3", random_player)
+# j5 = JogadorAlfaBetaAlt("Alfabeta")
+# j6 = Jogador("NÓS", query_player)
+faz_campeonato(jogo, [j1, j2, j3, j4], 10)
