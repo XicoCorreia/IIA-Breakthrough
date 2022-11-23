@@ -136,22 +136,27 @@ class JogadorAlfaBetaAlt(Jogador):  # faz só utility()
         print(self.nome + " ")
         
 def f_aval_jogadorheuristico(estado: EstadoBT_40, jogador):
-    player = "W" if jogador == 1 else "B"
-    columnsDict ={'a':1, 'b':2, 'c':3 , 'd':4 , 'e':5 , 'f':6 ,'g':7, 'h':8 }
-    pieces = [(col,row) for (col, row), val in estado.board.items() if val == player]
     res = 0
+    columnsDict ={'a':1, 'b':2, 'c':3 , 'd':4 , 'e':5 , 'f':6 ,'g':7, 'h':8 }
+    player = "W" if jogador == 1 else "B"
+    pieces = [(col,row) for (col, row), val in estado.board.items() if val == player]
     
     if jogador == 1:
         for col, row in pieces:
-            res += pieceValue(estado, jogador, row, col)
-            
+            # ! Esta linha pode ser comentada e o algoritmo ainda assim ganha bastante
+            res += pieceValue(estado, jogador, pieces, row, col)
+            #PLayerWin
             if row == 8:
-                return 500000       #PLayerWin
-            elif row == 7 and threat(estado, jogador, row, col):  #OneMoveTowin    
+                return 500000       
+            #OneMoveTowin
+            elif row == 7 and threat(estado, jogador, row, col):      
                 res += 10000
-            elif row == 1: #Homeground piece
+            #Homeground piece
+            elif row == 1: 
                 res += 10
-        for col in columnsDict.keys():            #Verificar se existem colunas vazias
+                
+        #Verificar se existem colunas vazias        
+        for col in columnsDict.keys():            
             exists = False
             for colp, _ in pieces:
                 if colp == col:
@@ -161,14 +166,20 @@ def f_aval_jogadorheuristico(estado: EstadoBT_40, jogador):
                 res -= 20      
     else:   
         for col, row in pieces:
-            res += pieceValue(estado, jogador, row, col)
+            # ! Esta linha pode ser comentada e o algoritmo ainda assim ganha bastante
+            res += pieceValue(estado, jogador, pieces, row, col)
+            #PLayerWin
             if row == 1:
-                return 500000       #PLayerWin
-            elif row == 2 and threat(estado, jogador, row, col):  #OneMoveTowin    
+                return 500000       
+            #OneMoveTowin
+            elif row == 2 and threat(estado, jogador, row, col):      
                 res += 10000
-            elif row == 8: #Homeground piece
+            #Homeground piece
+            elif row == 8:
                 res += 10
-        for col in columnsDict.keys():          #Verificar se existem colunas vazias
+                
+        #Verificar se existem colunas vazias
+        for col in columnsDict.keys():
             exists = False
             for colp, _ in pieces:
                 if colp == col:
@@ -178,8 +189,49 @@ def f_aval_jogadorheuristico(estado: EstadoBT_40, jogador):
                 res -= 20 
     return res
 
-def pieceValue(estado: EstadoBT_40, jogador, rowPiece, colPiece):
-    return 0
+def pieceValue(estado: EstadoBT_40, jogador, piece, rowPiece, colPiece):
+    res = 0
+    columnsDict ={'a':1, 'b':2, 'c':3 , 'd':4 , 'e':5 , 'f':6 ,'g':7, 'h':8 }
+    colNum = columnsDict.get(colPiece)
+    
+    #Piece Value
+    res += 1300  
+    
+    # * Verify horizontal connections
+    # * Verify vertical connections
+    horizontalCon = False 
+    verticalCon = False
+    for row, col in piece:
+
+        if row == rowPiece and (columnsDict.get(col) - 1 == colNum or columnsDict.get(col) + 1 == colNum):
+            horizontalCon = True
+
+        elif colPiece == col and (row + 1 == rowPiece or row - 1 == rowPiece):
+            verticalCon = True
+    if horizontalCon:
+        res += 35
+    if verticalCon:
+        res += 15
+        
+    #Peça pode ser atacada
+    #Peça pode ser protegida
+    #TODO
+        
+    #Peças mais avançadas valem mais
+    #Add how dangerous is the piece
+    if jogador == 1:
+        res += 10 * rowPiece
+        if rowPiece == 6:
+            res += 10
+        elif rowPiece == 7:
+            res += 100
+    else:
+        res += (9 - rowPiece) * 10
+        if rowPiece == 3:
+            res += 10
+        elif rowPiece == 2:
+            res += 100
+    return res
 
 def threat(estado: EstadoBT_40, jogador, rowPiece, colPiece):
     return False
