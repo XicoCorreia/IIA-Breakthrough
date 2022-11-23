@@ -5,7 +5,6 @@
 #  55855 - Francisco Maia
 #  55955 - Alexandre Fonseca
 
-from functools import reduce
 from jogos import (
     Game,
     GameState,
@@ -76,7 +75,10 @@ class JogoBT_40(Game):
     def executa(self, state: EstadoBT_40, valid_actions: list[str]):
         """Executa várias jogadas sobre um estado dado.
         Devolve o estado final."""
-        return reduce(self.result, valid_actions, state)
+        result = state
+        for move in valid_actions:
+            result = self.result(result, move)
+        return result
 
     def result(self, state: EstadoBT_40, move):
         to_move = 1 if state.to_move == 2 else 2
