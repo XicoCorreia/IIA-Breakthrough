@@ -138,41 +138,46 @@ class JogadorAlfaBetaAlt(Jogador):  # faz só utility()
 def f_aval_jogadorheuristico(estado: EstadoBT_40, jogador):
     player = "W" if jogador == 1 else "B"
     pieces = [(col,row) for (col, row), val in estado.board.items() if val == player]
+    piecesOther = [row for (_, row), val in estado.board.items() if val != player]
     piecesOtherCols = [col for (col, _), val in estado.board.items() if val != player]
     piecesCols = [col for (col, _), val in estado.board.items() if val == player]
     res = 0
     if jogador == 1:
         for (j,i) in pieces:   
-            #Brancas ganharam
+            res += pieceValue(estado, jogador, (j,i))
             if i == 8:
-                return 100000
-            #Peso da linha
-            res += i**2
-            #Verificar se é possivel ganhar na prox jogada
+                return 500000
             if i == 7:
                 if threat(estado, jogador, (j,i), 1): 
-                    res += 10000
-            #Numero de peças iguais na mesma coluna, ou diferentes
-            res -= piecesCols.count(j)
-            res += piecesOtherCols.count(j)
-
+                    res += 100000
+            res -= 20 * piecesCols.count(j) 
+            res += 20 * piecesOtherCols.count(j)
+            if piecesOther.count(3) > 0:
+                res -= 600
+            if piecesOther.count(4) > 0:
+                res -= 300
+                
             
             
     else:
         for (j,i) in pieces:
+            #Verificar se ja ganhou ou se ganha em 1 jogada
+            res += pieceValue(estado, jogador, (j,i))
             if i == 1:
-                return 100000
-            i = 9 - i
-            res += i**2
-            res -= piecesCols.count(j)
-            res += piecesOtherCols.count(j)
+                return 500000 
             if i == 2:
                 if threat(estado, jogador, (j,i), -1): 
-                    res += 10000
-            res -= piecesCols.count(j)
-            res += piecesOtherCols.count(j)
-            
-    
+                    res += 100000  
+            #Peças adversarias e iguais na msm coluna  
+            res -= 20 * piecesCols.count(j) 
+            res += 20 * piecesOtherCols.count(j)
+            #Peças adversárias em posições perigosas
+            if piecesOther.count(6) > 0:
+                res -= 400
+            if piecesOther.count(5) > 0:
+                res -= 200
+                
+
     return res
 
 def threat(estado: EstadoBT_40, jogador, tup, diff):
@@ -191,12 +196,125 @@ def threat(estado: EstadoBT_40, jogador, tup, diff):
                 return False
 
     return True
+
+def pieceValue(estado: EstadoBT_40, jogador, tup):
+    j, i = tup
+    res = 0
+    player = "W" if jogador == 1 else "B"
+    pieces = [(col,row) for (col, row), val in estado.board.items() if val == player]
+    piecesOther = [(col,row) for (col, row), val in estado.board.items() if val != player]
+    dict ={'a':1, 'b':2, 'c':3 , 'd':4 , 'e':5 , 'f':6 ,'g':7, 'h':8 }
+    n = dict.get(j)
+    if jogador == 1:  
+        res += i**2
+        #Verifica se a peça esta protegida
+        for (c,r) in pieces:
+            pProtected = False
+            if r == i - 1 and (dict.get(c) == n - 1 or dict.get(c) == n + 1):
+                pProtected = True
+                res += 50
+                if i == 5:
+                    res += 10
+                if i == 6:
+                    res += 100
+                break
+        #Verifica se peça tem outras peças iguais ao lado ou à frente/trás
+        for (c,r) in pieces:
+            hconn = False
+            vconn = False
+            if r == i  and (dict.get(c) == n - 1 or dict.get(c) == n + 1) and hconn == False:
+                res += 10
+                hconn = True
+            if c == j  and (r == i + 1 or r == i -1) and vconn == False:
+                res += 10
+                vconn = True
+            if hconn and vconn:
+                break
+        #Verifica se peça pode ser atacada
+        for (c,r) in piecesOther:
+            if r == i + 1 and (dict.get(c) == n - 1 or dict.get(c) == n + 1):
+                if(pProtected == False):
+                    res -= 100
+                else:
+                    res += 50
+                if i == 1:
+                    res -= 400000
+                if i == 2:
+                    res -= 20000
+                break
+        #Verifica se tem peças adversárias à frente
+        for (c,r) in piecesOther:
+            if (r == i - 1 or r == i + 1) and dict.get(c) == n:
+                res -= 50
+                break      
+        res += i*10
+    else:
+        pProtected = False
+        for (c,r) in pieces:
+            if r == i + 1 and (dict.get(c) == n - 1 or dict.get(c) == n + 1):
+                pProtected = True
+                res += 50
+                if i == 5:
+                    res += 10
+                if i == 6:
+                    res += 100
+                break
+        for (c,r) in pieces:
+            hconn = False
+            vconn = False
+            if r == i  and (dict.get(c) == n - 1 or dict.get(c) == n + 1) and hconn == False:
+                res += 10
+                hconn = True
+            if c == j  and (r == i + 1 or r == i -1) and vconn == False:
+                res += 10
+                vconn = True
+            if hconn and vconn:
+                break
+            
+        for (c,r) in piecesOther:
+            if r == i - 1 and (dict.get(c) == n - 1 or dict.get(c) == n + 1):
+                if(pProtected == False):
+                    res -= 100
+                else:
+                    res += 50
+                if i == 1:
+                    res -= 400000
+                if i == 2:
+                    res -= 200
+                break
+        for (c,r) in piecesOther:
+            if (r == i - 1 or r == i + 1) and dict.get(c) == n:
+                res -= 50
+                break      
+        i = 9 - i
+        res += i*10
+        res += i**2
+    return res 
     
+
+def threat(estado: EstadoBT_40, jogador, tup, diff):
+    player = "W" if jogador == 1 else "B"
+    col, row = tup
+    pieces = [(col,row) for (col, row), val in estado.board.items() if val != player]
+    dict ={'a':1, 'b':2, 'c':3 , 'd':4 , 'e':5 , 'f':6 ,'g':7, 'h':8 }
+    n = dict.get(col)
+    if n > 1:
+        for (c, r) in pieces:
+            if r == row + 1 and dict.get(c) == n - diff:
+                return False
+    if n < 8:
+        for (c, r) in pieces:
+            if r == row + 1 and dict.get(c) == n + diff:
+                return False
+
+    return True
+    
+
 jogo = JogoBT_40()
-j1 = JogadorAlfaBeta("Belarmino", 2, f_aval_belarmino)  # atualmente depth = 1
-j2 = JogadorAlfaBeta("JogadorHeuristico", 2, f_aval_jogadorheuristico) 
-#j3 = Jogador("Random 1", random_player)
-#j4 = Jogador("Random 2", random_player)
+j1 = JogadorAlfaBeta("Belarmino", 1, f_aval_belarmino)  # atualmente depth = 1
+j2 = JogadorAlfaBeta("JogadorHeuristico", 1, f_aval_jogadorheuristico) 
+j3 = Jogador("Random 1", random_player)
+j4 = Jogador("Random 2", random_player)
 #j5 = Jogador("Random 3", random_player)
 # j5 = JogadorAlfaBetaAlt("Alfabeta")
 # j6 = Jogador("NÓS", query_player)
