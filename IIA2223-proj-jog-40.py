@@ -6,7 +6,6 @@
 #  55955 - Alexandre Fonseca
 
 from functools import reduce
-import collections
 from jogos import (
     Game,
     GameState,
@@ -136,31 +135,31 @@ class JogadorAlfaBetaAlt(Jogador):  # faz só utility()
         print(self.nome + " ")
 
 
-def f_aval_jogadorheuristico(estado: EstadoBT_40, jogador):
+def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
     res = 0
-    columnsDict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
+    columns_dict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
     player = "W" if jogador == 1 else "B"
     pieces = [(col, row) for (col, row), val in estado.board.items() if val == player]
 
     if jogador == 1:
         for col, row in pieces:
             # ! Esta linha pode ser comentada e o algoritmo ainda assim ganha bastante
-            res += pieceValue(estado, jogador, pieces, row, col)
+            res += piece_value(estado, jogador, pieces, row, col)
             # PLayerWin
             if row == 8:
                 return 500000
             # OneMoveTowin
-            elif row == 7 and threat(estado, jogador, row, col):
+            if row == 7 and threat(estado, jogador, row, col):
                 res += 10000
             # Homeground piece
             elif row == 1:
                 res += 10
 
         # Verificar se existem colunas vazias
-        for col in columnsDict.keys():
+        for col in columns_dict:
             exists = False
-            for colp, _ in pieces:
-                if colp == col:
+            for col_piece, _ in pieces:
+                if col_piece == col:
                     exists = True
                     break
             if not exists:
@@ -168,22 +167,22 @@ def f_aval_jogadorheuristico(estado: EstadoBT_40, jogador):
     else:
         for col, row in pieces:
             # ! Esta linha pode ser comentada e o algoritmo ainda assim ganha bastante
-            res += pieceValue(estado, jogador, pieces, row, col)
+            res += piece_value(estado, jogador, pieces, row, col)
             # PLayerWin
             if row == 1:
                 return 500000
             # OneMoveTowin
-            elif row == 2 and threat(estado, jogador, row, col):
+            if row == 2 and threat(estado, jogador, row, col):
                 res += 10000
             # Homeground piece
             elif row == 8:
                 res += 10
 
         # Verificar se existem colunas vazias
-        for col in columnsDict.keys():
+        for col in columns_dict:
             exists = False
-            for colp, _ in pieces:
-                if colp == col:
+            for col_piece, _ in pieces:
+                if col_piece == col:
                     exists = True
                     break
             if not exists:
@@ -191,30 +190,26 @@ def f_aval_jogadorheuristico(estado: EstadoBT_40, jogador):
     return res
 
 
-def pieceValue(estado: EstadoBT_40, jogador, piece, rowPiece, colPiece):
+def piece_value(estado: EstadoBT_40, jogador, piece, row_piece, col_piece):
     res = 0
-    columnsDict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
-    colNum = columnsDict.get(colPiece)
+    columns_dict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
+    col_num = columns_dict[col_piece]
 
     # Piece Value
     res += 1300
 
     # * Verify horizontal connections
     # * Verify vertical connections
-    horizontalCon = False
-    verticalCon = False
+    horizontal_conn = False
+    vertical_conn = False
     for row, col in piece:
-
-        if row == rowPiece and (
-            columnsDict.get(col) - 1 == colNum or columnsDict.get(col) + 1 == colNum
-        ):
-            horizontalCon = True
-
-        elif colPiece == col and (row + 1 == rowPiece or row - 1 == rowPiece):
-            verticalCon = True
-    if horizontalCon:
+        if row == row_piece and columns_dict[col] in (col_num - 1, col_num + 1):
+            horizontal_conn = True
+        elif col_piece == col and row_piece in (row - 1, row + 1):
+            vertical_conn = True
+    if horizontal_conn:
         res += 35
-    if verticalCon:
+    if vertical_conn:
         res += 15
 
     # Peça pode ser atacada
@@ -224,28 +219,28 @@ def pieceValue(estado: EstadoBT_40, jogador, piece, rowPiece, colPiece):
     # Peças mais avançadas valem mais
     # Add how dangerous is the piece
     if jogador == 1:
-        res += 10 * rowPiece
-        if rowPiece == 6:
+        res += 10 * row_piece
+        if row_piece == 6:
             res += 10
-        elif rowPiece == 7:
+        elif row_piece == 7:
             res += 100
     else:
-        res += (9 - rowPiece) * 10
-        if rowPiece == 3:
+        res += (9 - row_piece) * 10
+        if row_piece == 3:
             res += 10
-        elif rowPiece == 2:
+        elif row_piece == 2:
             res += 100
     return res
 
 
-def threat(estado: EstadoBT_40, jogador, rowPiece, colPiece):
+def threat(estado: EstadoBT_40, jogador, row_piece, col_piece):
     return False
 
 
 jogo = JogoBT_40()
 j1 = JogadorAlfaBeta("Belarmino", 3, f_aval_belarmino)  # atualmente depth = 1
-j2 = JogadorAlfaBeta("JogadorHeuristico", 3, f_aval_jogadorheuristico)
-# j3 = Jogador("Random 1", random_player)
+j2 = JogadorAlfaBeta("JogadorHeuristico", 3, f_aval_jogador_heuristico)
+j3 = Jogador("Random 1", random_player)
 # j4 = Jogador("Random 2", random_player)
 # j5 = Jogador("Random 3", random_player)
 # j5 = JogadorAlfaBetaAlt("Alfabeta")
