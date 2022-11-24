@@ -142,16 +142,16 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
     columns_dict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
     player = "W" if jogador == 1 else "B"
     pieces = [(col, row) for (col, row), val in estado.board.items() if val == player]
+    piecesEnemy = [(col, row) for (col, row), val in estado.board.items() if val != player]
 
     if jogador == 1:
         for col, row in pieces:
-            # ! Esta linha pode ser comentada e o algoritmo ainda assim ganha bastante
-            res += piece_value(estado, jogador, pieces, row, col)
+            res += piece_value(estado, jogador, pieces, piecesEnemy, row, col)
             # PLayerWin
             if row == 8:
                 return 500000
             # OneMoveTowin
-            if row == 7 and threat(estado, jogador, row, col):
+            if row == 7 and threat(estado, jogador, pieces, piecesEnemy, row, col):
                 res += 10000
             # Homeground piece
             elif row == 1:
@@ -168,13 +168,12 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
                 res -= 20
     else:
         for col, row in pieces:
-            # ! Esta linha pode ser comentada e o algoritmo ainda assim ganha bastante
-            res += piece_value(estado, jogador, pieces, row, col)
+            res += piece_value(estado, jogador, pieces, piecesEnemy, row, col)
             # PLayerWin
             if row == 1:
                 return 500000
             # OneMoveTowin
-            if row == 2 and threat(estado, jogador, row, col):
+            if row == 2 and threat(estado, jogador, pieces, piecesEnemy, row, col):
                 res += 10000
             # Homeground piece
             elif row == 8:
@@ -192,7 +191,7 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
     return res
 
 
-def piece_value(estado: EstadoBT_40, jogador, piece, row_piece, col_piece):
+def piece_value(estado: EstadoBT_40, jogador, piece, piecesEnemy, row_piece, col_piece):
     res = 0
     columns_dict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
     col_num = columns_dict[col_piece]
@@ -202,49 +201,100 @@ def piece_value(estado: EstadoBT_40, jogador, piece, row_piece, col_piece):
 
     # * Verify horizontal connections
     # * Verify vertical connections
+    # * Verify if piece is protected
     horizontal_conn = False
     vertical_conn = False
-    for row, col in piece:
+    protected = False
+    for col, row in piece:
+        
         if row == row_piece and columns_dict[col] in (col_num - 1, col_num + 1):
             horizontal_conn = True
         elif col_piece == col and row_piece in (row - 1, row + 1):
             vertical_conn = True
+            
+        if jogador == 1:
+            if (row == row_piece - 1) and  columns_dict[col] in (col_num -1, col_num + 1 ):
+                res += 35
+                protected = True
+        else:
+            if (row == row_piece + 1) and  columns_dict[col] in (col_num -1, col_num + 1):
+                res += 35
+                protected = True
+            
     if horizontal_conn:
         res += 35
     if vertical_conn:
         res += 15
 
-    # Peça pode ser atacada
-    # Peça pode ser protegida
-    # TODO
 
-    # Peças mais avançadas valem mais
-    # Add how dangerous is the piece
-    if jogador == 1:
-        res += 10 * row_piece
-        if row_piece == 6:
-            res += 10
-        elif row_piece == 7:
-            res += 100
+    # * Verify if piece can be attacked
+    piece_in_danger = False
+    for col, row in piecesEnemy:
+        if jogador == 1:
+            if (row == row_piece + 1) and columns_dict[col] in (col_num -1, col_num + 1):
+                piece_in_danger = True
+                break
+        else:
+            if (row == row_piece - 1) and columns_dict[col] in (col_num -1, col_num + 1):
+                piece_in_danger = True
+                break
+    
+    # Peças mais avançadas e que não podem ser atacadas valem mais
+    if piece_in_danger:
+        res -= 65
+        if not protected:
+            res -=  65   
+    else:
+        if not protected:
+            if jogador == 1:
+                if row_piece == 6:
+                    res += 10
+                elif row_piece == 7:
+                    res += 100
+            else:
+                if row_piece == 3:
+                    res += 10
+                elif row_piece == 2:
+                    res += 100
+                
+    # Perigo da peça
+    if(jogador == 1):         
+        res += row_piece * 10
     else:
         res += (9 - row_piece) * 10
-        if row_piece == 3:
-            res += 10
-        elif row_piece == 2:
-            res += 100
+                
     return res
 
 
-def threat(estado: EstadoBT_40, jogador, row_piece, col_piece):
-    return False
+def threat(estado: EstadoBT_40, jogador, pieces, piecesEnemy, row_piece, col_piece):
+    columns_dict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
+    col_num = columns_dict[col_piece]
+    threat1 =  False
+    threat2 = False
+    
+    if jogador == 1:
+        for col, row in piecesEnemy:
+            if row == 8 and col_num == columns_dict[col] + 1:
+                threat1 = True
+            if row == 8 and col_num == columns_dict[col] - 1:
+                threat2 = True
+    else:
+        for col, row in piecesEnemy:
+            if row == 1 and col_num == columns_dict[col] + 1:
+                threat1 = True
+            if row == 1 and col_num == columns_dict[col] - 1:
+                threat2 = True
+        
+    return threat2 and threat1
 
 
 jogo = JogoBT_40()
-j1 = JogadorAlfaBeta("Belarmino", 3, f_aval_belarmino)  # atualmente depth = 1
-j2 = JogadorAlfaBeta("JogadorHeuristico", 3, f_aval_jogador_heuristico)
-j3 = Jogador("Random 1", random_player)
+j1 = JogadorAlfaBeta("Belarmino", 4, f_aval_belarmino)  # atualmente depth = 1
+j2 = JogadorAlfaBeta("JogadorHeuristico", 4, f_aval_jogador_heuristico)
+# j3 = Jogador("Random 1", random_player)
 # j4 = Jogador("Random 2", random_player)
 # j5 = Jogador("Random 3", random_player)
 # j5 = JogadorAlfaBetaAlt("Alfabeta")
 # j6 = Jogador("NÓS", query_player)
+
 faz_campeonato(jogo, [j1, j2], 10)
