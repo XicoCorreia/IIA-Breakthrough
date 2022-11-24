@@ -10,6 +10,7 @@ from jogos import (
     GameState,
     random_player,
     alphabeta_cutoff_search_new,
+    query_player
 )
 from jogar import faz_campeonato, JogadorAlfaBeta, Jogador
 
@@ -155,7 +156,7 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
                 res += 10000
             # Homeground piece
             elif row == 1:
-                res += 10
+                res += 150
 
         # Verificar se existem colunas vazias
         for col in columns_dict:
@@ -166,6 +167,7 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
                     break
             if not exists:
                 res -= 20
+        res -= len(piecesEnemy) * 20
     else:
         for col, row in pieces:
             res += piece_value(estado, jogador, pieces, piecesEnemy, row, col)
@@ -177,7 +179,7 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
                 res += 10000
             # Homeground piece
             elif row == 8:
-                res += 10
+                res += 150
 
         # Verificar se existem colunas vazias
         for col in columns_dict:
@@ -188,6 +190,8 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
                     break
             if not exists:
                 res -= 20
+                
+        res -= len(piecesEnemy) * 20
     return res
 
 
@@ -214,17 +218,17 @@ def piece_value(estado: EstadoBT_40, jogador, piece, piecesEnemy, row_piece, col
             
         if jogador == 1:
             if (row == row_piece - 1) and  columns_dict[col] in (col_num -1, col_num + 1 ):
-                res += 35
                 protected = True
         else:
             if (row == row_piece + 1) and  columns_dict[col] in (col_num -1, col_num + 1):
-                res += 35
                 protected = True
             
     if horizontal_conn:
         res += 35
     if vertical_conn:
         res += 15
+    if protected:
+        res += 35
 
 
     # * Verify if piece can be attacked
@@ -289,12 +293,11 @@ def threat(estado: EstadoBT_40, jogador, pieces, piecesEnemy, row_piece, col_pie
 
 
 jogo = JogoBT_40()
-j1 = JogadorAlfaBeta("Belarmino", 4, f_aval_belarmino)  # atualmente depth = 1
-j2 = JogadorAlfaBeta("JogadorHeuristico", 4, f_aval_jogador_heuristico)
-# j3 = Jogador("Random 1", random_player)
-# j4 = Jogador("Random 2", random_player)
-# j5 = Jogador("Random 3", random_player)
-# j5 = JogadorAlfaBetaAlt("Alfabeta")
-# j6 = Jogador("NÓS", query_player)
-
+j1 = JogadorAlfaBeta("Belarmino", 1, f_aval_belarmino)  # atualmente depth = 1
+j2 = JogadorAlfaBeta("Heurácio", 1, f_aval_jogador_heuristico)
+#j3 = Jogador("Random 1", random_player)
+#j4 = Jogador("Random 2", random_player)
+#j5 = Jogador("Random 3", random_player)
+#j5 = JogadorAlfaBetaAlt("Alfabeta")
+#j6 = Jogador("NÓS", query_player)
 faz_campeonato(jogo, [j1, j2], 10)
