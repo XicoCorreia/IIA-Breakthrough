@@ -5,13 +5,14 @@
 #  55855 - Francisco Maia
 #  55955 - Alexandre Fonseca
 
+from time import time
 from jogos import (
     Game,
     random_player,
     alphabeta_cutoff_search_new,
     query_player,
 )
-from jogar import faz_campeonato, JogadorAlfaBeta, Jogador
+from jogar import faz_campeonato, joga11, JogadorAlfaBeta, Jogador
 
 WHITE = 1
 BLACK = 2
@@ -361,15 +362,22 @@ def threat(estado: EstadoBT_40, jogador, pieces, pieces_opponent, row_piece, col
 
 def main():
     jogo = JogoBT_40()
-    j1 = JogadorAlfaBeta("Belarmino 1", 2, f_aval_belarmino)  # atualmente depth = 1
-    j11 = JogadorAlfaBeta("Belarmino 2", 2, f_aval_belarmino)  # atualmente depth = 1
+    j1 = JogadorAlfaBeta("Belarmino 1", 4, f_aval_belarmino)  # atualmente depth = 1
+    j11 = JogadorAlfaBeta("Belarmino 2", 4, f_aval_belarmino)  # atualmente depth = 1
     j2 = JogadorAlfaBeta("Heurácio", 1, f_aval_jogador_heuristico)
     j3 = Jogador("Random 1", random_player)
     j4 = Jogador("Random 2", random_player)
     j5 = Jogador("Random 3", random_player)
     j5 = JogadorAlfaBetaAlt("Alfabeta")
     j6 = Jogador("NÓS", query_player)
-    faz_campeonato(jogo, [j1, j11], 10)
+    time_start = time()
+    a = joga11(jogo, j1, j11)
+    delta = time() - time_start
+    num_moves = len(a[1])
+    print(delta, "s")
+    print(num_moves, "moves")
+    print(delta / num_moves, "s em média")
+    # faz_campeonato(jogo, [j1, j11], 10)
 
 
 if __name__ == "__main__":
