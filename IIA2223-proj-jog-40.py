@@ -5,14 +5,8 @@
 #  55855 - Francisco Maia
 #  55955 - Alexandre Fonseca
 
-from time import time
-from jogos import (
-    Game,
-    random_player,
-    alphabeta_cutoff_search_new,
-    query_player,
-)
-from jogar import faz_campeonato, joga11, JogadorAlfaBeta, Jogador
+from jogos import Game
+from jogar import faz_campeonato, JogadorAlfaBeta
 
 WHITE = 1
 BLACK = 2
@@ -111,23 +105,47 @@ class JogoBT_40(Game):
         )
 
     def terminal_test(self, state: EstadoBT_40):
-        return state.utility != 0 or len(self.actions(state)) == 0
+        # Os próprios jogos em jogar.py lidam com
+        # os casos em que já não há jogadas (peças).
+        return state.utility != 0
 
     def utility(self, state: EstadoBT_40, player):
         # W: 1, B: -1
         return state.utility if player == WHITE else -state.utility
 
     def compute_utility(self, row, player):
+        """
+        Devolve a utilidade para um dado estado:
+        (1: vitória, -1: derrota, 0: não terminou)
+
+        Pressupõe-se que a função é chamada unicamente quando
+        é criado um novo estado e que o valor de `row` resulta
+        de uma jogada válida para o `player` em questão.
+        """
         if 0 < row < self.n - 1:
             return 0
         return 1 if player == WHITE else -1
 
     def compute_action_dict(self, n):
-        """
-        Gera um dicionário de ações que associa pares de coordenadas
-        ((x1, y1), (x2, y2)) para ações no formato dado no enunciado.
-        Exemplo: ((0, 0), (1, 1)) -> a1-b2
-        """
+        """Devolve um dicionário que associa uma posição `(x, y)`
+        usada no estado interno às ações disponíveis nessa posição.
+
+        As associações são feitas em função do jogador
+        (`1` para peças brancas, `2` para peças pretas).
+
+        As ações são devolvidas num dicionário em que as chaves são
+        a posição do destino e os valores são a ação em si.
+
+        Exemplo de ações para uma peça em `(1,1)` (visualmente, `b2`):
+        ```python
+        jogo = JogoBT_40()
+        acoes_em_b2 = jogo.action_dict[(1, 1)]
+        jogo.action_dict[(1, 1)] == (
+            None,  # padding para indexar com state.to_move sem offset
+            {(2, 0): "b2-a3", (2, 1): "b2-b3", (2, 2): "b2-c3"}, # jog. 1
+            {(0, 0): "b2-a1", (0, 1): "b2-b1", (0, 2): "b2-c1"}, # jog. 2
+        )
+        ```"""
 
         def in_board(x):
             return 0 <= x < n
@@ -174,22 +192,6 @@ def f_aval_belarmino(estado: EstadoBT_40, jogador):
             x = n - row
             res += x**x
     return res
-
-
-class JogadorAlfaBetaAlt(Jogador):  # faz só utility()
-    def __init__(self, nome, depth=4):
-        super().__init__(
-            nome,
-            lambda game, state: alphabeta_cutoff_search_new(
-                state,
-                game,
-                depth,
-                eval_fn=game.utility,
-            ),
-        )
-
-    def display(self):
-        print(self.nome + " ")
 
 
 def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
@@ -260,7 +262,6 @@ def piece_value(estado: EstadoBT_40, row, col):
     res = 0
     n = len(estado.board)
 
-    protected = False
     piece_in_danger = False
     if estado.to_move == WHITE:
         pieces = estado.whites
@@ -287,7 +288,6 @@ def piece_value(estado: EstadoBT_40, row, col):
     # * Verify if piece is protected (can counter-attack)
     if (friend_row, col - 1) in pieces or (friend_row, col + 1) in pieces:
         res += 15
-        protected = True
 
     # * Verify if piece can be attacked
     if (opp_row, col - 1) in pieces_opponent or (opp_row, col + 1) in pieces_opponent:
@@ -307,7 +307,6 @@ def piece_value(estado: EstadoBT_40, row, col):
 
 
 def threat(estado: EstadoBT_40, row, col):
-    # ? explode nas rows de cima/baixo
     if estado.to_move == WHITE:
         pieces_opponent = estado.blacks
         row += 1
@@ -318,26 +317,12 @@ def threat(estado: EstadoBT_40, row, col):
 
 
 def main():
-    d = 2
+    d = 3
     jogo = JogoBT_40()
-    j1 = JogadorAlfaBeta("Belarmino", d, f_aval_belarmino)  # atualmente depth = 1
-    j11 = JogadorAlfaBeta("Belarmino 2", d, f_aval_belarmino)  # atualmente depth = 1
+    j1 = JogadorAlfaBeta("Belarmino", d, f_aval_belarmino)
     j2 = JogadorAlfaBeta("Heurácio", d, f_aval_jogador_heuristico)
-    j22 = JogadorAlfaBeta("Velho", d, f_aval_jogador_heuristico_old)
-    j3 = Jogador("Random 1", random_player)
-    j4 = Jogador("Random 2", random_player)
-    j5 = Jogador("Random 3", random_player)
-    j5 = JogadorAlfaBetaAlt("Alfabeta")
-    j6 = Jogador("NÓS", query_player)
-    # time_start = time()
-    # a = joga11(jogo, j1, j2)
-    # delta = time() - time_start
-    # num_moves = len(a[1])
-    # print(delta, "s")
-    # print(num_moves, "moves")
-    # print(delta / num_moves, "s em média")
-    # jogo.jogar(j1.fun, j2.fun, verbose=False)
-    faz_campeonato(jogo, [j2, j1, j22], 10)
+    j3 = JogadorAlfaBeta("Velho", d, f_aval_jogador_heuristico_old)
+    faz_campeonato(jogo, [j1, j2, j3], 10)
 
 
 if __name__ == "__main__":
