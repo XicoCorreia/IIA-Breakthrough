@@ -58,15 +58,15 @@ class JogoBT_40(Game):
             return state.moves
         moves = set()
         if state.to_move == WHITE:
-            player_pieces, opponent_pieces = state.whites, state.blacks
+            pieces, pieces_opponent = state.whites, state.blacks
         else:
-            player_pieces, opponent_pieces = state.blacks, state.whites
-        for pos in player_pieces:
+            pieces, pieces_opponent = state.blacks, state.whites
+        for pos in pieces:
             for target, move in self.action_dict[pos][state.to_move].items():
                 # can't eat opponent's piece if it is directly in front of ours
-                if target[1] == pos[1] and target in opponent_pieces:
+                if target[1] == pos[1] and target in pieces_opponent:
                     continue
-                if target not in player_pieces:  # don't eat our own pieces
+                if target not in pieces:  # don't eat our own pieces
                     moves.add(move)
         state.moves = sorted(moves)
         return state.moves
@@ -164,13 +164,14 @@ class JogoBT_40(Game):
 
 def f_aval_belarmino(estado: EstadoBT_40, jogador):
     res = 0
+    n = len(estado.board)
     if jogador == WHITE:
         for row, _ in estado.whites:
             x = row + 1
             res += x**x
     else:
         for row, _ in estado.blacks:
-            x = 8 - row
+            x = n - row
             res += x**x
     return res
 
@@ -193,191 +194,150 @@ class JogadorAlfaBetaAlt(Jogador):  # faz só utility()
 
 def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
     res = 0
-    columns_dict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
-    player = "W" if jogador == 1 else "B"
-    pieces = [(col, row) for (col, row), val in estado.board.items() if val == player]
-    pieces_opponent = [
-        (col, row) for (col, row), val in estado.board.items() if val != player
-    ]
+    n = len(estado.board)
+    home, target, offset = (0, n - 1, -1) if jogador == WHITE else (n - 1, 0, 1)
 
-    if jogador == 1:
-        for col, row in pieces:
-            res += piece_value(estado, jogador, pieces, pieces_opponent, row, col)
-            # PLayerWin
-            if row == 8:
-                return 500000
-            # OneMoveTowin
-            if row == 7 and threat(estado, jogador, pieces, pieces_opponent, row, col):
-                res += 10000
-            # Homeground piece
-            elif row == 1:
-                res += 150
-
-        # Verificar se existem colunas vazias
-        for col in columns_dict:
-            exists = False
-            for col_piece, _ in pieces:
-                if col_piece == col:
-                    exists = True
-                    break
-            if not exists:
-                res -= 20
-        res -= len(pieces_opponent) * 20
+    if jogador == WHITE:
+        pieces, pieces_opponent = estado.whites, estado.blacks
     else:
-        for col, row in pieces:
-            res += piece_value(estado, jogador, pieces, pieces_opponent, row, col)
-            # PLayerWin
-            if row == 1:
-                return 500000
-            # OneMoveTowin
-            if row == 2 and threat(estado, jogador, pieces, pieces_opponent, row, col):
-                res += 10000
-            # Homeground piece
-            elif row == 8:
-                res += 150
+        pieces, pieces_opponent = estado.blacks, estado.whites
 
-        # Verificar se existem colunas vazias
-        for col in columns_dict:
-            exists = False
-            for col_piece, _ in pieces:
-                if col_piece == col:
-                    exists = True
-                    break
-            if not exists:
-                res -= 20
+    # Verificar se existem colunas vazias
+    occupied_cols = set()
 
-        res -= len(pieces_opponent) * 20
+    # Player win
+    if target in map(lambda x: x[0], list(pieces)):
+        return float("+inf")
+
+    for row, col in pieces:
+        occupied_cols.add(col)
+        res += piece_value(estado, row, col)
+        # One move to win
+        if row == target + offset and not threat(estado, row, col):
+            res += 10000
+        # Homeground piece
+        elif row == home:
+            res += 150
+
+    res -= (n - len(occupied_cols)) * 20
+    res -= len(pieces_opponent) * 80
     return res
 
 
-def piece_value(
-    estado: EstadoBT_40, jogador, piece, pieces_opponent, row_piece, col_piece
-):
+def f_aval_jogador_heuristico_old(estado: EstadoBT_40, jogador):
     res = 0
-    columns_dict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
-    col_num = columns_dict[col_piece]
+    n = len(estado.board)
+    home, target, offset = (0, n - 1, -1) if jogador == WHITE else (n - 1, 0, 1)
 
-    # Piece Value
-    res += 1300
+    if jogador == WHITE:
+        pieces, pieces_opponent = estado.whites, estado.blacks
+    else:
+        pieces, pieces_opponent = estado.blacks, estado.whites
+
+    # Verificar se existem colunas vazias
+    occupied_cols = set()
+
+    # Player win
+    if target in map(lambda x: x[0], list(pieces)):
+        return float("+inf")
+
+    for row, col in pieces:
+        occupied_cols.add(col)
+        # res += piece_value(estado, row, col)
+        # One move to win
+        if row == target + offset and not threat(estado, row, col):
+            res += 10000
+        # Homeground piece
+        elif row == home:
+            res += 150
+
+    res -= (n - len(occupied_cols)) * 20
+    res -= len(pieces_opponent) * 20
+    return res
+
+
+def piece_value(estado: EstadoBT_40, row, col):
+    res = 0
+    n = len(estado.board)
+
+    protected = False
+    piece_in_danger = False
+    if estado.to_move == WHITE:
+        pieces = estado.whites
+        pieces_opponent = estado.blacks
+        friend_row, opp_row = row - 1, row + 1
+        second_row, third_row = n - 2, n - 3  # from winning row
+        row_value = row + 1
+
+    else:
+        pieces = estado.blacks
+        pieces_opponent = estado.whites
+        friend_row, opp_row = row + 1, row - 1
+        second_row, third_row = 1, 2  # from winning row
+        row_value = n - row
 
     # * Verify horizontal connections
-    # * Verify vertical connections
-    # * Verify if piece is protected
-    horizontal_conn = False
-    vertical_conn = False
-    protected = False
-    for col, row in piece:
-
-        if row == row_piece and columns_dict[col] in (col_num - 1, col_num + 1):
-            horizontal_conn = True
-        elif col_piece == col and row_piece in (row - 1, row + 1):
-            vertical_conn = True
-
-        if jogador == 1:
-            if (row == row_piece - 1) and columns_dict[col] in (
-                col_num - 1,
-                col_num + 1,
-            ):
-                protected = True
-        else:
-            if (row == row_piece + 1) and columns_dict[col] in (
-                col_num - 1,
-                col_num + 1,
-            ):
-                protected = True
-
-    if horizontal_conn:
-        res += 35
-    if vertical_conn:
+    if (row, col - 1) in pieces or (row, col + 1) in pieces:
         res += 15
-    if protected:
-        res += 35
+
+    # * Verify vertical connections
+    if (row - 1, col) in pieces or (row + 1, col) in pieces:
+        res += 5
+
+    # * Verify if piece is protected (can counter-attack)
+    if (friend_row, col - 1) in pieces or (friend_row, col + 1) in pieces:
+        res += 15
+        protected = True
 
     # * Verify if piece can be attacked
-    piece_in_danger = False
-    for col, row in pieces_opponent:
-        if jogador == 1:
-            if (row == row_piece + 1) and columns_dict[col] in (
-                col_num - 1,
-                col_num + 1,
-            ):
-                piece_in_danger = True
-                break
-        else:
-            if (row == row_piece - 1) and columns_dict[col] in (
-                col_num - 1,
-                col_num + 1,
-            ):
-                piece_in_danger = True
-                break
+    if (opp_row, col - 1) in pieces_opponent or (opp_row, col + 1) in pieces_opponent:
+        # Peças mais avançadas e que não podem ser atacadas valem mais
+        res -= 15
+        piece_in_danger = True
 
-    # Peças mais avançadas e que não podem ser atacadas valem mais
-    if piece_in_danger:
-        res -= 65
-        if not protected:
-            res -= 65
-    else:
-        if not protected:
-            if jogador == 1:
-                if row_piece == 6:
-                    res += 10
-                elif row_piece == 7:
-                    res += 100
-            else:
-                if row_piece == 3:
-                    res += 10
-                elif row_piece == 2:
-                    res += 100
+    if not piece_in_danger:
+        if row == third_row:
+            res += 5
+        elif row == second_row:
+            res += 20
 
-    # Perigo da peça
-    if jogador == 1:
-        res += row_piece * 10
-    else:
-        res += (9 - row_piece) * 10
+    res += row_value * 10
 
     return res
 
 
-def threat(estado: EstadoBT_40, jogador, pieces, pieces_opponent, row_piece, col_piece):
-    columns_dict = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8}
-    col_num = columns_dict[col_piece]
-    threat1 = False
-    threat2 = False
-
-    if jogador == 1:
-        for col, row in pieces_opponent:
-            if row == 8 and col_num == columns_dict[col] + 1:
-                threat1 = True
-            if row == 8 and col_num == columns_dict[col] - 1:
-                threat2 = True
+def threat(estado: EstadoBT_40, row, col):
+    # ? explode nas rows de cima/baixo
+    if estado.to_move == WHITE:
+        pieces_opponent = estado.blacks
+        row += 1
     else:
-        for col, row in pieces_opponent:
-            if row == 1 and col_num == columns_dict[col] + 1:
-                threat1 = True
-            if row == 1 and col_num == columns_dict[col] - 1:
-                threat2 = True
-
-    return threat2 and threat1
+        pieces_opponent = estado.whites
+        row -= 1
+    return (row, col - 1) in pieces_opponent or (row, col + 1) in pieces_opponent
 
 
 def main():
+    d = 2
     jogo = JogoBT_40()
-    j1 = JogadorAlfaBeta("Belarmino 1", 4, f_aval_belarmino)  # atualmente depth = 1
-    j11 = JogadorAlfaBeta("Belarmino 2", 4, f_aval_belarmino)  # atualmente depth = 1
-    j2 = JogadorAlfaBeta("Heurácio", 1, f_aval_jogador_heuristico)
+    j1 = JogadorAlfaBeta("Belarmino", d, f_aval_belarmino)  # atualmente depth = 1
+    j11 = JogadorAlfaBeta("Belarmino 2", d, f_aval_belarmino)  # atualmente depth = 1
+    j2 = JogadorAlfaBeta("Heurácio", d, f_aval_jogador_heuristico)
+    j22 = JogadorAlfaBeta("Velho", d, f_aval_jogador_heuristico_old)
     j3 = Jogador("Random 1", random_player)
     j4 = Jogador("Random 2", random_player)
     j5 = Jogador("Random 3", random_player)
     j5 = JogadorAlfaBetaAlt("Alfabeta")
     j6 = Jogador("NÓS", query_player)
-    time_start = time()
-    a = joga11(jogo, j1, j11)
-    delta = time() - time_start
-    num_moves = len(a[1])
-    print(delta, "s")
-    print(num_moves, "moves")
-    print(delta / num_moves, "s em média")
-    # faz_campeonato(jogo, [j1, j11], 10)
+    # time_start = time()
+    # a = joga11(jogo, j1, j2)
+    # delta = time() - time_start
+    # num_moves = len(a[1])
+    # print(delta, "s")
+    # print(num_moves, "moves")
+    # print(delta / num_moves, "s em média")
+    # jogo.jogar(j1.fun, j2.fun, verbose=False)
+    faz_campeonato(jogo, [j2, j1, j22], 10)
 
 
 if __name__ == "__main__":
