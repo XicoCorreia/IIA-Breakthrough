@@ -8,9 +8,6 @@
 from jogos import Game
 from jogar import faz_campeonato, JogadorAlfaBeta
 
-WHITE = 1
-BLACK = 2
-
 
 class EstadoBT_40:
     def __init__(self, to_move, utility, board, whites, blacks, moves=None):
@@ -34,16 +31,19 @@ class EstadoBT_40:
 
 
 class JogoBT_40(Game):
+    WHITE = 1
+    BLACK = 2
+
     def __init__(self, n=8):
         self.n = n
         whites = set((row, col) for row in range(2) for col in range(n))
         blacks = set((row, col) for row in range(n - 2, n) for col in range(n))
         board = [[0 for _ in range(n)] for _ in range(n)]
         for x, y in whites:
-            board[x][y] = WHITE
+            board[x][y] = JogoBT_40.WHITE
         for x, y in blacks:
-            board[x][y] = BLACK
-        to_move = WHITE
+            board[x][y] = JogoBT_40.BLACK
+        to_move = JogoBT_40.WHITE
         self.action_dict = self.compute_action_dict(n)
         self.initial = EstadoBT_40(to_move, 0, board, whites, blacks)
 
@@ -51,7 +51,7 @@ class JogoBT_40(Game):
         if state.moves:
             return state.moves
         moves = set()
-        if state.to_move == WHITE:
+        if state.to_move == JogoBT_40.WHITE:
             pieces, pieces_opponent = state.whites, state.blacks
         else:
             pieces, pieces_opponent = state.blacks, state.whites
@@ -68,7 +68,7 @@ class JogoBT_40(Game):
     def display(self, state):
         print(state)
         if not self.terminal_test(state):
-            print(f'--NEXT PLAYER: {"W" if state.to_move == WHITE else "B"}')
+            print(f'--NEXT PLAYER: {"W" if state.to_move == JogoBT_40.WHITE else "B"}')
 
     def executa(self, state: EstadoBT_40, valid_actions: "list[str]"):
         """Executa várias jogadas sobre um estado dado.
@@ -85,16 +85,16 @@ class JogoBT_40(Game):
         board[old_row][old_col] = 0
         whites, blacks = state.whites.copy(), state.blacks.copy()
 
-        if state.to_move == WHITE:
+        if state.to_move == JogoBT_40.WHITE:
             whites.remove((old_row, old_col))
             whites.add((new_row, new_col))
             blacks.discard((new_row, new_col))
-            to_move = BLACK
+            to_move = JogoBT_40.BLACK
         else:
             blacks.remove((old_row, old_col))
             blacks.add((new_row, new_col))
             whites.discard((new_row, new_col))
-            to_move = WHITE
+            to_move = JogoBT_40.WHITE
 
         return EstadoBT_40(
             to_move,
@@ -111,7 +111,7 @@ class JogoBT_40(Game):
 
     def utility(self, state: EstadoBT_40, player):
         # W: 1, B: -1
-        return state.utility if player == WHITE else -state.utility
+        return state.utility if player == JogoBT_40.WHITE else -state.utility
 
     def compute_utility(self, row, player):
         """
@@ -124,7 +124,7 @@ class JogoBT_40(Game):
         """
         if 0 < row < self.n - 1:
             return 0
-        return 1 if player == WHITE else -1
+        return 1 if player == JogoBT_40.WHITE else -1
 
     def compute_action_dict(self, n):
         """Devolve um dicionário que associa uma posição `(x, y)`
@@ -183,7 +183,7 @@ class JogoBT_40(Game):
 def f_aval_belarmino(estado: EstadoBT_40, jogador):
     res = 0
     n = len(estado.board)
-    if jogador == WHITE:
+    if jogador == JogoBT_40.WHITE:
         for row, _ in estado.whites:
             x = row + 1
             res += x**x
@@ -197,9 +197,9 @@ def f_aval_belarmino(estado: EstadoBT_40, jogador):
 def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
     res = 0
     n = len(estado.board)
-    home, target, offset = (0, n - 1, -1) if jogador == WHITE else (n - 1, 0, 1)
+    home, target, k = (0, n - 1, -1) if jogador == JogoBT_40.WHITE else (n - 1, 0, 1)
 
-    if jogador == WHITE:
+    if jogador == JogoBT_40.WHITE:
         pieces, pieces_opponent = estado.whites, estado.blacks
     else:
         pieces, pieces_opponent = estado.blacks, estado.whites
@@ -215,7 +215,7 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
         occupied_cols.add(col)
         res += piece_value(estado, row, col)
         # One move to win
-        if row == target + offset and not threat(estado, row, col):
+        if row == target + k and not threat(estado, row, col):
             res += 10000
         # Homeground piece
         elif row == home:
@@ -229,9 +229,9 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
 def f_aval_jogador_heuristico_old(estado: EstadoBT_40, jogador):
     res = 0
     n = len(estado.board)
-    home, target, offset = (0, n - 1, -1) if jogador == WHITE else (n - 1, 0, 1)
+    home, target, k = (0, n - 1, -1) if jogador == JogoBT_40.WHITE else (n - 1, 0, 1)
 
-    if jogador == WHITE:
+    if jogador == JogoBT_40.WHITE:
         pieces, pieces_opponent = estado.whites, estado.blacks
     else:
         pieces, pieces_opponent = estado.blacks, estado.whites
@@ -247,7 +247,7 @@ def f_aval_jogador_heuristico_old(estado: EstadoBT_40, jogador):
         occupied_cols.add(col)
         # res += piece_value(estado, row, col)
         # One move to win
-        if row == target + offset and not threat(estado, row, col):
+        if row == target + k and not threat(estado, row, col):
             res += 10000
         # Homeground piece
         elif row == home:
@@ -263,7 +263,7 @@ def piece_value(estado: EstadoBT_40, row, col):
     n = len(estado.board)
 
     piece_in_danger = False
-    if estado.to_move == WHITE:
+    if estado.to_move == JogoBT_40.WHITE:
         pieces = estado.whites
         pieces_opponent = estado.blacks
         friend_row, opp_row = row - 1, row + 1
@@ -307,7 +307,7 @@ def piece_value(estado: EstadoBT_40, row, col):
 
 
 def threat(estado: EstadoBT_40, row, col):
-    if estado.to_move == WHITE:
+    if estado.to_move == JogoBT_40.WHITE:
         pieces_opponent = estado.blacks
         row += 1
     else:
