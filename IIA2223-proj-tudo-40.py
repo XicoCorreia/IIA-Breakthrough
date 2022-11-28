@@ -9,12 +9,11 @@ from jogos import Game
 
 
 class EstadoBT_40:
-    def __init__(self, to_move, utility, board, whites, blacks, moves=None):
+    def __init__(self, to_move, utility, board, pieces, moves=None):
         self.to_move = to_move
         self.utility = utility
         self.board = board
-        self.whites = whites
-        self.blacks = blacks
+        self.pieces = pieces
         self.moves = moves
 
     def __str__(self):
@@ -44,16 +43,16 @@ class JogoBT_40(Game):
             board[x][y] = JogoBT_40.BLACK
         to_move = JogoBT_40.WHITE
         self.action_dict = self.compute_action_dict(n)
-        self.initial = EstadoBT_40(to_move, 0, board, whites, blacks)
+        self.initial = EstadoBT_40(to_move, 0, board, (whites, blacks))
 
     def actions(self, state: EstadoBT_40):
         if state.moves:
             return state.moves
         moves = set()
-        if state.to_move == JogoBT_40.WHITE:
-            pieces, pieces_opponent = state.whites, state.blacks
-        else:
-            pieces, pieces_opponent = state.blacks, state.whites
+        pieces, pieces_opponent = (
+            state.pieces[state.to_move - 1],
+            state.pieces[state.to_move % 2],
+        )
         for pos in pieces:
             for target, move in self.action_dict[pos][state.to_move].items():
                 # can't eat opponent's piece if it is directly in front of ours
@@ -82,7 +81,7 @@ class JogoBT_40(Game):
         (old_row, old_col), (new_row, new_col) = self.convert_move(move)
         board[new_row][new_col] = state.to_move
         board[old_row][old_col] = 0
-        whites, blacks = state.whites.copy(), state.blacks.copy()
+        whites, blacks = state.pieces[0].copy(), state.pieces[1].copy()
 
         if state.to_move == JogoBT_40.WHITE:
             whites.remove((old_row, old_col))
@@ -99,8 +98,7 @@ class JogoBT_40(Game):
             to_move,
             self.compute_utility(new_row, state.to_move),
             board,
-            whites,
-            blacks,
+            (whites, blacks),
         )
 
     def terminal_test(self, state: EstadoBT_40):
@@ -182,11 +180,11 @@ def func_aval_belarmino(estado: EstadoBT_40, jogador):
     res = 0
     n = len(estado.board)
     if jogador == JogoBT_40.WHITE:
-        for row, _ in estado.whites:
+        for row, _ in estado.pieces[jogador - 1]:
             x = row + 1
             res += x**x
     else:
-        for row, _ in estado.blacks:
+        for row, _ in estado.pieces[jogador - 1]:
             x = n - row
             res += x**x
     return res
@@ -197,10 +195,10 @@ def func_aval_marco(estado: EstadoBT_40, jogador):
     n = len(estado.board)
     home, target, k = (0, n - 1, -1) if jogador == JogoBT_40.WHITE else (n - 1, 0, 1)
 
-    if jogador == JogoBT_40.WHITE:
-        pieces, pieces_opponent = estado.whites, estado.blacks
-    else:
-        pieces, pieces_opponent = estado.blacks, estado.whites
+    pieces, pieces_opponent = (
+        estado.pieces[estado.to_move - 1],
+        estado.pieces[estado.to_move % 2],
+    )
 
     # Verificar se existem colunas vazias
     occupied_cols = set()
@@ -220,7 +218,7 @@ def func_aval_marco(estado: EstadoBT_40, jogador):
             res += 150
 
     res -= (n - len(occupied_cols)) * 20
-    res -= len(pieces_opponent) * 20
+    res -= len(pieces_opponent) * 80
     return res
 
 
@@ -230,10 +228,10 @@ def func_aval_heuracio(estado: EstadoBT_40, jogador):
     n = len(estado.board)
     home, target, k = (0, n - 1, -1) if jogador == JogoBT_40.WHITE else (n - 1, 0, 1)
 
-    if jogador == JogoBT_40.WHITE:
-        pieces, pieces_opponent = estado.whites, estado.blacks
-    else:
-        pieces, pieces_opponent = estado.blacks, estado.whites
+    pieces, pieces_opponent = (
+        estado.pieces[estado.to_move - 1],
+        estado.pieces[estado.to_move % 2],
+    )
 
     # Verificar se existem colunas vazias
     occupied_cols = set()
@@ -262,16 +260,16 @@ def piece_value(estado: EstadoBT_40, row, col):
     n = len(estado.board)
 
     piece_in_danger = False
+    pieces, pieces_opponent = (
+        estado.pieces[estado.to_move - 1],
+        estado.pieces[estado.to_move % 2],
+    )
+
     if estado.to_move == JogoBT_40.WHITE:
-        pieces = estado.whites
-        pieces_opponent = estado.blacks
         friend_row, opp_row = row - 1, row + 1
         second_row, third_row = n - 2, n - 3  # from winning row
         row_value = row + 1
-
     else:
-        pieces = estado.blacks
-        pieces_opponent = estado.whites
         friend_row, opp_row = row + 1, row - 1
         second_row, third_row = 1, 2  # from winning row
         row_value = n - row
@@ -306,10 +304,9 @@ def piece_value(estado: EstadoBT_40, row, col):
 
 
 def threat(estado: EstadoBT_40, row, col):
+    pieces_opponent = estado.pieces[estado.to_move % 2]
     if estado.to_move == JogoBT_40.WHITE:
-        pieces_opponent = estado.blacks
         row += 1
     else:
-        pieces_opponent = estado.whites
         row -= 1
     return (row, col - 1) in pieces_opponent or (row, col + 1) in pieces_opponent
