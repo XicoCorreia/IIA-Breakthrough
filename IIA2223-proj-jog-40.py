@@ -6,7 +6,6 @@
 #  55955 - Alexandre Fonseca
 
 from jogos import Game
-from jogar import faz_campeonato, JogadorAlfaBeta
 
 
 class EstadoBT_40:
@@ -139,7 +138,7 @@ class JogoBT_40(Game):
         Exemplo de ações para uma peça em `(1,1)` (visualmente, `b2`):
         ```python
         jogo = JogoBT_40()
-        acoes_em_b2 = jogo.action_dict[(1, 1)]
+        actions_b2 = jogo.action_dict[(1, 1)]
         jogo.action_dict[(1, 1)] == (
             None,  # padding para indexar com state.to_move sem offset
             {(2, 0): "b2-a3", (2, 1): "b2-b3", (2, 2): "b2-c3"}, # jog. 1
@@ -167,7 +166,6 @@ class JogoBT_40(Game):
                 ret[(row, col)] = (None, white_moves, black_moves)
         return ret
 
-    # ? Usar dict inverso para mais desempenho
     def convert_move(self, move):
         """Converte uma ação no formato do enunciado
         para uma ação representada no estado interno.
@@ -180,21 +178,7 @@ class JogoBT_40(Game):
         )
 
 
-def f_aval_belarmino(estado: EstadoBT_40, jogador):
-    res = 0
-    n = len(estado.board)
-    if jogador == JogoBT_40.WHITE:
-        for row, _ in estado.whites:
-            x = row + 1
-            res += x**x
-    else:
-        for row, _ in estado.blacks:
-            x = n - row
-            res += x**x
-    return res
-
-
-def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
+def func_aval_40(estado: EstadoBT_40, jogador):
     res = 0
     n = len(estado.board)
     home, target, k = (0, n - 1, -1) if jogador == JogoBT_40.WHITE else (n - 1, 0, 1)
@@ -226,38 +210,6 @@ def f_aval_jogador_heuristico(estado: EstadoBT_40, jogador):
     return res
 
 
-def f_aval_jogador_heuristico_old(estado: EstadoBT_40, jogador):
-    res = 0
-    n = len(estado.board)
-    home, target, k = (0, n - 1, -1) if jogador == JogoBT_40.WHITE else (n - 1, 0, 1)
-
-    if jogador == JogoBT_40.WHITE:
-        pieces, pieces_opponent = estado.whites, estado.blacks
-    else:
-        pieces, pieces_opponent = estado.blacks, estado.whites
-
-    # Verificar se existem colunas vazias
-    occupied_cols = set()
-
-    # Player win
-    if target in map(lambda x: x[0], list(pieces)):
-        return float("+inf")
-
-    for row, col in pieces:
-        occupied_cols.add(col)
-        # res += piece_value(estado, row, col)
-        # One move to win
-        if row == target + k and not threat(estado, row, col):
-            res += 10000
-        # Homeground piece
-        elif row == home:
-            res += 150
-
-    res -= (n - len(occupied_cols)) * 20
-    res -= len(pieces_opponent) * 20
-    return res
-
-
 def piece_value(estado: EstadoBT_40, row, col):
     res = 0
     n = len(estado.board)
@@ -277,19 +229,19 @@ def piece_value(estado: EstadoBT_40, row, col):
         second_row, third_row = 1, 2  # from winning row
         row_value = n - row
 
-    # * Verify horizontal connections
+    # Verify horizontal connections
     if (row, col - 1) in pieces or (row, col + 1) in pieces:
         res += 15
 
-    # * Verify vertical connections
+    # Verify vertical connections
     if (row - 1, col) in pieces or (row + 1, col) in pieces:
         res += 5
 
-    # * Verify if piece is protected (can counter-attack)
+    # Verify if piece is protected (can counter-attack)
     if (friend_row, col - 1) in pieces or (friend_row, col + 1) in pieces:
         res += 15
 
-    # * Verify if piece can be attacked
+    # Verify if piece can be attacked
     if (opp_row, col - 1) in pieces_opponent or (opp_row, col + 1) in pieces_opponent:
         # Peças mais avançadas e que não podem ser atacadas valem mais
         res -= 15
@@ -314,16 +266,3 @@ def threat(estado: EstadoBT_40, row, col):
         pieces_opponent = estado.whites
         row -= 1
     return (row, col - 1) in pieces_opponent or (row, col + 1) in pieces_opponent
-
-
-def main():
-    d = 3
-    jogo = JogoBT_40()
-    j1 = JogadorAlfaBeta("Belarmino", d, f_aval_belarmino)
-    j2 = JogadorAlfaBeta("Heurácio", d, f_aval_jogador_heuristico)
-    j3 = JogadorAlfaBeta("Velho", d, f_aval_jogador_heuristico_old)
-    faz_campeonato(jogo, [j1, j2, j3], 10)
-
-
-if __name__ == "__main__":
-    main()
