@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name missing-module-docstring missing-class-docstring missing-function-docstring
+# pylint: disable=invalid-name missing-module-docstring missing-function-docstring
 # IIA-2223
 # Autores:
 #  54685 - Francisco Correia
@@ -9,6 +9,9 @@ from jogos import Game
 
 
 class EstadoBT_40:
+    """Uma classe que representa o estado de um jogo Breakthrough
+    para o grupo 40 de IIA 22/23."""
+
     def __init__(self, to_move, utility, board, pieces, moves=None):
         self.to_move = to_move
         self.utility = utility
@@ -27,8 +30,23 @@ class EstadoBT_40:
         board_str.append(" |a b c d e f g h")
         return "\n".join(board_str)
 
+    def threat(self, pos: "tuple[int, int]"):
+        """Verifica se uma peça na posição `pos` do próximo jogador (`to_move`)
+        pode ser comida por uma peça do adversário.
+
+        Devolve `True` se a peça do próximo jogador estiver vulnerável,
+        `False` em caso contrário."""
+
+        pieces_opponent = self.pieces[self.to_move % 2]
+        row, col = pos
+        row = (row + 1, row - 1, 1)[self.to_move - 1]
+        return (row, col - 1) in pieces_opponent or (row, col + 1) in pieces_opponent
+
 
 class JogoBT_40(Game):
+    """Uma classe que representa um jogo de Breakthrough
+    para o grupo 40 de IIA 22/23."""
+
     WHITE = 1
     BLACK = 2
 
@@ -190,123 +208,120 @@ def func_aval_belarmino(estado: EstadoBT_40, jogador):
     return res
 
 
-def func_aval_marco(estado: EstadoBT_40, jogador):
-    res = 0
-    n = len(estado.board)
-    home, target, k = (0, n - 1, -1) if jogador == JogoBT_40.WHITE else (n - 1, 0, 1)
-
-    pieces, pieces_opponent = (
-        estado.pieces[estado.to_move - 1],
-        estado.pieces[estado.to_move % 2],
-    )
-
-    # Verificar se existem colunas vazias
-    occupied_cols = set()
-
-    # Player win
-    if target in map(lambda x: x[0], list(pieces)):
-        return float("+inf")
-
-    for row, col in pieces:
-        occupied_cols.add(col)
-        # res += piece_value(estado, row, col)
-        # One move to win
-        if row == target + k and not threat(estado, row, col):
-            res += 10000
-        # Homeground piece
-        elif row == home:
-            res += 150
-
-    res -= (n - len(occupied_cols)) * 20
-    res -= len(pieces_opponent) * 80
-    return res
-
-
 # Nota: esta função é a função submetida no torneio (func_aval_40)
 def func_aval_heuracio(estado: EstadoBT_40, jogador):
-    res = 0
+    res = func_aval_win(estado, jogador)
+    if res > 0:
+        return res
+
+    res += 15 * func_aval_horizontal(estado, jogador)
+
+    res += 5 * func_aval_vertical(estado, jogador)
+
+    res += 5 * func_aval_danger(estado, jogador)
+
+    res -= 20 * func_aval_occupied_cols(estado, jogador)
+
+    res -= 80 * func_aval_opponent_piece_count(estado, jogador)
+
+    res += 10000 * func_aval_one_move_to_win(estado, jogador)
+
+    res += 150 * func_aval_home_ground(estado, jogador)
+
+    res += 10 * func_aval_piece_value(estado, jogador)
+
+    return res
+
+
+def func_aval_win(estado: EstadoBT_40, jogador):
     n = len(estado.board)
-    home, target, k = (0, n - 1, -1) if jogador == JogoBT_40.WHITE else (n - 1, 0, 1)
+    pieces = estado.pieces[jogador - 1]
+    target_row = (n - 1, 0)[jogador - 1]
+    for row, _ in pieces:
+        if target_row == row:
+            return float("+inf")
+    return 0
 
-    pieces, pieces_opponent = (
-        estado.pieces[estado.to_move - 1],
-        estado.pieces[estado.to_move % 2],
-    )
 
-    # Verificar se existem colunas vazias
-    occupied_cols = set()
-
-    # Player win
-    if target in map(lambda x: x[0], list(pieces)):
-        return float("+inf")
-
+def func_aval_horizontal(estado: EstadoBT_40, jogador):
+    res = 0
+    pieces = estado.pieces[jogador - 1]
     for row, col in pieces:
-        occupied_cols.add(col)
-        res += piece_value(estado, row, col)
-        # One move to win
-        if row == target + k and not threat(estado, row, col):
-            res += 10000
-        # Homeground piece
-        elif row == home:
-            res += 150
-
-    res -= (n - len(occupied_cols)) * 20
-    res -= len(pieces_opponent) * 80
+        if (row, col - 1) in pieces or (row, col + 1) in pieces:
+            res += 1
     return res
 
 
-def piece_value(estado: EstadoBT_40, row, col):
+def func_aval_vertical(estado: EstadoBT_40, jogador):
+    res = 0
+    pieces = estado.pieces[jogador - 1]
+    for row, col in pieces:
+        if (row - 1, col) in pieces or (row + 1, col) in pieces:
+            res += 1
+    return res
+
+
+def func_aval_danger(estado: EstadoBT_40, jogador):
     res = 0
     n = len(estado.board)
-
-    piece_in_danger = False
-    pieces, pieces_opponent = (
-        estado.pieces[estado.to_move - 1],
-        estado.pieces[estado.to_move % 2],
-    )
-
-    if estado.to_move == JogoBT_40.WHITE:
-        friend_row, opp_row = row - 1, row + 1
-        second_row, third_row = n - 2, n - 3  # from winning row
-        row_value = row + 1
-    else:
-        friend_row, opp_row = row + 1, row - 1
-        second_row, third_row = 1, 2  # from winning row
-        row_value = n - row
-
-    # Verify horizontal connections
-    if (row, col - 1) in pieces or (row, col + 1) in pieces:
-        res += 15
-
-    # Verify vertical connections
-    if (row - 1, col) in pieces or (row + 1, col) in pieces:
-        res += 5
-
-    # Verify if piece is protected (can counter-attack)
-    if (friend_row, col - 1) in pieces or (friend_row, col + 1) in pieces:
-        res += 15
-
-    # Verify if piece can be attacked
-    if (opp_row, col - 1) in pieces_opponent or (opp_row, col + 1) in pieces_opponent:
-        # Peças mais avançadas e que não podem ser atacadas valem mais
-        res -= 15
-        piece_in_danger = True
-
-    if not piece_in_danger:
-        if row == third_row:
-            res += 5
-        elif row == second_row:
-            res += 20
-
-    res += row_value * 10
-
+    k, second_row, third_row = ((1, n - 2, n - 3), (-1, 1, 2))[jogador - 1]
+    pieces_opponent = estado.pieces[jogador % 2]
+    for row, col in pieces_opponent:
+        row = row + k
+        if (row, col - 1) in pieces_opponent or (row, col + 1) in pieces_opponent:
+            # Peças mais avançadas e que não podem ser atacadas valem mais
+            res -= 3
+            if row == third_row:  # from victory row
+                res += 1
+            elif row == second_row:  # from victory row
+                res += 4
     return res
 
 
-def threat(estado: EstadoBT_40, row, col):
-    pieces_opponent = estado.pieces[estado.to_move % 2]
-    if estado.to_move == JogoBT_40.WHITE:
-        row += 1
+def func_aval_occupied_cols(estado: EstadoBT_40, jogador):
+    occupied_cols = set()
+    pieces = estado.pieces[jogador - 1]
+    n = len(estado.board)
+    for _, col in pieces:
+        occupied_cols.add(col)
+    return n - len(occupied_cols)
+
+
+def func_aval_opponent_piece_count(estado: EstadoBT_40, jogador):
+    pieces_opponent = estado.pieces[jogador % 2]
+    return len(pieces_opponent)
+
+
+def func_aval_one_move_to_win(estado: EstadoBT_40, jogador):
+    res = 0
+    n = len(estado.board)
+    target, k = ((n - 1, -1), (0, 1))[jogador - 1]
+    pieces = estado.pieces[jogador - 1]
+    for row, col in pieces:
+        if row == target + k and not estado.threat((row, col)):
+            res += 1
+    return res
+
+
+def func_aval_home_ground(estado: EstadoBT_40, jogador):
+    n = len(estado.board)
+    home = 0 if jogador == JogoBT_40.WHITE else n - 1
+    res = 0
+    pieces = estado.pieces[jogador - 1]
+    for row, _ in pieces:
+        if row == home:
+            res += 1
+    return res
+
+
+def func_aval_piece_value(estado: EstadoBT_40, jogador):
+    res = 0
+    n = len(estado.board)
+    pieces = estado.pieces[jogador - 1]
+    if jogador == JogoBT_40.WHITE:
+        for row, _ in pieces:
+            res += row + 1
     else:
-        row -= 1
-    return (row, col - 1) in pieces_opponent or (row, col + 1) in pieces_opponent
+        for row, _ in pieces:
+            res += n - row
+    return res
