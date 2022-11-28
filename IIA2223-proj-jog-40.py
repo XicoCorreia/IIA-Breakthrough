@@ -266,3 +266,6 @@ def threat(estado: EstadoBT_40, row, col):
         pieces_opponent = estado.whites
         row -= 1
     return (row, col - 1) in pieces_opponent or (row, col + 1) in pieces_opponent
+
+
+jogadorBT_40 = func_aval_40
