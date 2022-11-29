@@ -222,7 +222,7 @@ def func_aval_heuracio(estado: EstadoBT_40, jogador):
 
     res += 5 * func_aval_danger(estado, jogador)
 
-    res -= 20 * func_aval_occupied_cols(estado, jogador)
+    res -= 20 * func_aval_empty_cols(estado, jogador)
 
     res -= 80 * func_aval_opponent_piece_count(estado, jogador)
 
@@ -236,6 +236,8 @@ def func_aval_heuracio(estado: EstadoBT_40, jogador):
 
 
 def func_aval_win(estado: EstadoBT_40, jogador):
+    """Função de avaliação que devolve um valor arbitrariamente
+    elevado se o estado for vitorioso."""
     n = len(estado.board)
     pieces = estado.pieces[jogador - 1]
     target_row = (n - 1, 0)[jogador - 1]
@@ -246,6 +248,8 @@ def func_aval_win(estado: EstadoBT_40, jogador):
 
 
 def func_aval_horizontal(estado: EstadoBT_40, jogador):
+    """Função de avaliação que valoriza a existência de
+    peças amigáveis adjacentes a uma peça na horizontal."""
     res = 0
     pieces = estado.pieces[jogador - 1]
     for row, col in pieces:
@@ -255,6 +259,8 @@ def func_aval_horizontal(estado: EstadoBT_40, jogador):
 
 
 def func_aval_vertical(estado: EstadoBT_40, jogador):
+    """Função de avaliação que valoriza a existência de
+    peças amigáveis adjacentes a uma peça na vertical."""
     res = 0
     pieces = estado.pieces[jogador - 1]
     for row, col in pieces:
@@ -264,6 +270,8 @@ def func_aval_vertical(estado: EstadoBT_40, jogador):
 
 
 def func_aval_protected(estado: EstadoBT_40, jogador):
+    """Função de avaliação que valoriza a existência de peças amigáveis
+    que podem contra-atacar caso uma peça seja comida pelo adversário."""
     res = 0
     pieces = estado.pieces[jogador - 1]
     k = (-1, 1)[jogador - 1]
@@ -275,6 +283,10 @@ def func_aval_protected(estado: EstadoBT_40, jogador):
 
 
 def func_aval_danger(estado: EstadoBT_40, jogador):
+    """Função de avaliação que (des)valoriza a possibilidade
+    de uma peça ser comida pelo adversário.
+    A função valoriza ainda peças que estejam relativamente
+    perto da vitória, desde que estas não estejam em perigo."""
     res = 0
     n = len(estado.board)
     k, second_row, third_row = ((1, n - 2, n - 3), (-1, 1, 2))[jogador - 1]
@@ -291,7 +303,9 @@ def func_aval_danger(estado: EstadoBT_40, jogador):
     return res
 
 
-def func_aval_occupied_cols(estado: EstadoBT_40, jogador):
+def func_aval_empty_cols(estado: EstadoBT_40, jogador):
+    """Função de avaliação que (des)valoriza a existência de
+    colunas vazias (isto é, não ocupadas por peças amigáveis)."""
     occupied_cols = set()
     pieces = estado.pieces[jogador - 1]
     n = len(estado.board)
@@ -301,11 +315,15 @@ def func_aval_occupied_cols(estado: EstadoBT_40, jogador):
 
 
 def func_aval_opponent_piece_count(estado: EstadoBT_40, jogador):
+    """Função de avaliação que (des)valoriza o número de
+    peças do adversário."""
     pieces_opponent = estado.pieces[jogador % 2]
     return len(pieces_opponent)
 
 
 def func_aval_one_move_to_win(estado: EstadoBT_40, jogador):
+    """Função de avaliação que valoriza uma vitória iminente
+    (i.e., a uma jogada de vencer)."""
     res = 0
     n = len(estado.board)
     target, k = ((n - 1, -1), (0, 1))[jogador - 1]
@@ -317,6 +335,8 @@ def func_aval_one_move_to_win(estado: EstadoBT_40, jogador):
 
 
 def func_aval_home_ground(estado: EstadoBT_40, jogador):
+    """Função de avaliação que valoriza peças na primeira linha,
+    e, por conseguinte, a defesa."""
     n = len(estado.board)
     home = 0 if jogador == JogoBT_40.WHITE else n - 1
     res = 0
@@ -328,6 +348,8 @@ def func_aval_home_ground(estado: EstadoBT_40, jogador):
 
 
 def func_aval_piece_value(estado: EstadoBT_40, jogador):
+    """Função de avaliação que valoriza o número de
+    peças amigáveis."""
     res = 0
     n = len(estado.board)
     pieces = estado.pieces[jogador - 1]
