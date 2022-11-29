@@ -218,6 +218,8 @@ def func_aval_heuracio(estado: EstadoBT_40, jogador):
 
     res += 5 * func_aval_vertical(estado, jogador)
 
+    res += 15 * func_aval_protected(estado, jogador)
+
     res += 5 * func_aval_danger(estado, jogador)
 
     res -= 20 * func_aval_occupied_cols(estado, jogador)
@@ -261,6 +263,17 @@ def func_aval_vertical(estado: EstadoBT_40, jogador):
     return res
 
 
+def func_aval_protected(estado: EstadoBT_40, jogador):
+    res = 0
+    pieces = estado.pieces[jogador - 1]
+    k = (-1, 1)[jogador - 1]
+    for row, col in pieces:
+        friend_row = row + k
+        if (friend_row, col - 1) in pieces or (friend_row, col + 1) in pieces:
+            res += 1
+    return res
+
+
 def func_aval_danger(estado: EstadoBT_40, jogador):
     res = 0
     n = len(estado.board)
@@ -271,9 +284,9 @@ def func_aval_danger(estado: EstadoBT_40, jogador):
         if (row, col - 1) in pieces_opponent or (row, col + 1) in pieces_opponent:
             # Peças mais avançadas e que não podem ser atacadas valem mais
             res -= 3
-            if row == third_row:  # from victory row
+            if row == third_row:  # vs. a 1a fila do adversário
                 res += 1
-            elif row == second_row:  # from victory row
+            elif row == second_row:  # vs. a 1a fila do adversário
                 res += 4
     return res
 
