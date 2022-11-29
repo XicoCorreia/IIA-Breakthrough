@@ -1,4 +1,9 @@
 # pylint: disable=missing-module-docstring missing-function-docstring global-statement
+# IIA-2223
+# Autores:
+#  54685 - Francisco Correia
+#  55855 - Francisco Maia
+#  55955 - Alexandre Fonseca
 from collections import defaultdict
 
 import contextlib
