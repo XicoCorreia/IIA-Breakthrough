@@ -1,6 +1,11 @@
 # pylint: disable=missing-module-docstring missing-function-docstring global-statement
+from collections import defaultdict
+
+import contextlib
 import importlib
+import io
 import itertools
+import json
 import os
 import sys
 
@@ -24,26 +29,66 @@ PLAYER_FUNC_MAP = {
 
 def main():
     try:
-        *player_names, depth = sys.argv[1:]
+        *player_names, depth, output_path = sys.argv[1:]
     except ValueError:
-        player_names = depth = 0
-    if not player_names:
+        player_names = depth = output_path = ""
+
+    if not depth.isnumeric():
+        player_names = [*player_names, depth]
+        depth = output_path
+        output_path = None
+
+    if not player_names or not depth.isnumeric():
         print(
-            "Usage: <path_to_python_binary> corre_torneios.py <player_1> <player_2> [...] <depth>"
+            "Usage: <path_to_python_binary> corre_torneios.py "
+            + "<player_1> <player_2> [...] <depth> [json_output_path]"
         )
         print("Available players: 'belarmino', 'heuracio', 'marco', 'randy'.")
-        print("Example: python3 corre_torneios.py belarmino randy 1")
+        print("Examples: python3 corre_torneios.py belarmino randy 1")
+        print("          python3 corre_torneios.py marco heuracio 2 ~/output.json")
         sys.exit(1)
 
     players = [PLAYER_FUNC_MAP[name](int(depth)) for name in player_names]
     max_workers = os.cpu_count() or 1
     with ProcessingPool(max_workers=max_workers) as executor:
-        executor.map(worker, itertools.repeat(players, max_workers))
+        results = executor.map(worker, itertools.repeat(players, max_workers))
+    lines = [line for result in results for line in result.split("\n")]
+    stdout_str = "\n".join(lines)
+    player_points = get_player_points(lines)
+    json_output = json.dumps(player_points, ensure_ascii=False, indent=4)
+
+    print(stdout_str)
+    print("--------------")
+    print("Player points:")
+    total = sum(player_points.values())
+    for key, val in player_points.items():
+        print(f"  {key}: {val}/{total}")
+    print("--------------")
+
+    if output_path:
+        with open(output_path, mode="w", encoding="utf-8") as out_file:
+            out_file.write(json_output)
+            print("File saved to:", output_path)
+
+
+def filter_line(line):
+    return line and "--vencedor" not in line and "JOGADOR" not in line
+
+
+def get_player_points(lines):
+    ret = defaultdict(int)
+    pontos_jogadores = list(map(lambda x: x.split(), filter(filter_line, lines)))
+    for player, points in pontos_jogadores:
+        ret[player] += int(points)
+    return ret
 
 
 def worker(players: "list[Jogador]"):
-    jogo = JogoBT_40()
-    faz_campeonato(jogo, players, 120)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        jogo = JogoBT_40()
+        faz_campeonato(jogo, players, 120)
+        return buf.getvalue()
 
 
 if __name__ == "__main__":
