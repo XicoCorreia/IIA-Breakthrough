@@ -5,7 +5,6 @@
 #  55855 - Francisco Maia
 #  55955 - Alexandre Fonseca
 
-from jogar import JogadorAlfaBeta
 from jogos import Game
 
 
@@ -255,6 +254,9 @@ def func_aval_heuracio(estado: EstadoBT_40, jogador):
     res += 10 * func_aval_piece_value(estado, jogador)
 
     return res
+
+
+func_aval_40 = func_aval_heuracio
 
 
 def func_aval_win(estado: EstadoBT_40, jogador):
