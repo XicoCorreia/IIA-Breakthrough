@@ -199,32 +199,32 @@ class JogoBT_40(Game):
 def func_aval_40(estado: EstadoBT_40, jogador):
     """Função de avaliação formada a partir das
     diversas funções de avaliação criadas."""
-    res = func_aval_win(estado, jogador)
+    res = func_aval_win_40(estado, jogador)
     if res > 0:
         return res
 
-    res += 15 * func_aval_horizontal(estado, jogador)
+    res += 15 * func_aval_horizontal_40(estado, jogador)
 
-    res += 5 * func_aval_vertical(estado, jogador)
+    res += 5 * func_aval_vertical_40(estado, jogador)
 
-    res += 15 * func_aval_protected(estado, jogador)
+    res += 15 * func_aval_protected_40(estado, jogador)
 
-    res += 5 * func_aval_danger(estado, jogador)
+    res += 5 * func_aval_danger_40(estado, jogador)
 
-    res -= 20 * func_aval_empty_cols(estado, jogador)
+    res -= 20 * func_aval_empty_cols_40(estado, jogador)
 
-    res -= 80 * func_aval_opponent_piece_count(estado, jogador)
+    res -= 80 * func_aval_opponent_piece_count_40(estado, jogador)
 
-    res += 10000 * func_aval_one_move_to_win(estado, jogador)
+    res += 10000 * func_aval_one_move_to_win_40(estado, jogador)
 
-    res += 150 * func_aval_home_ground(estado, jogador)
+    res += 150 * func_aval_home_ground_40(estado, jogador)
 
-    res += 10 * func_aval_piece_value(estado, jogador)
+    res += 10 * func_aval_piece_value_40(estado, jogador)
 
     return res
 
 
-def func_aval_win(estado: EstadoBT_40, jogador):
+def func_aval_win_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que devolve um valor arbitrariamente
     elevado se o estado for vitorioso."""
     n = len(estado.board)
@@ -236,7 +236,7 @@ def func_aval_win(estado: EstadoBT_40, jogador):
     return 0
 
 
-def func_aval_horizontal(estado: EstadoBT_40, jogador):
+def func_aval_horizontal_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que valoriza a existência de
     peças amigáveis adjacentes a uma peça na horizontal."""
     res = 0
@@ -247,7 +247,7 @@ def func_aval_horizontal(estado: EstadoBT_40, jogador):
     return res
 
 
-def func_aval_vertical(estado: EstadoBT_40, jogador):
+def func_aval_vertical_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que valoriza a existência de
     peças amigáveis adjacentes a uma peça na vertical."""
     res = 0
@@ -258,7 +258,7 @@ def func_aval_vertical(estado: EstadoBT_40, jogador):
     return res
 
 
-def func_aval_protected(estado: EstadoBT_40, jogador):
+def func_aval_protected_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que valoriza a existência de peças amigáveis
     que podem contra-atacar caso uma peça seja comida pelo adversário."""
     res = 0
@@ -271,7 +271,7 @@ def func_aval_protected(estado: EstadoBT_40, jogador):
     return res
 
 
-def func_aval_danger(estado: EstadoBT_40, jogador):
+def func_aval_danger_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que (des)valoriza a possibilidade
     de uma peça ser comida pelo adversário.
     A função valoriza ainda peças que estejam relativamente
@@ -292,7 +292,7 @@ def func_aval_danger(estado: EstadoBT_40, jogador):
     return res
 
 
-def func_aval_empty_cols(estado: EstadoBT_40, jogador):
+def func_aval_empty_cols_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que (des)valoriza a existência de
     colunas vazias (isto é, não ocupadas por peças amigáveis)."""
     occupied_cols = set()
@@ -303,14 +303,14 @@ def func_aval_empty_cols(estado: EstadoBT_40, jogador):
     return n - len(occupied_cols)
 
 
-def func_aval_opponent_piece_count(estado: EstadoBT_40, jogador):
+def func_aval_opponent_piece_count_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que (des)valoriza o número de
     peças do adversário."""
     pieces_opponent = estado.pieces[jogador % 2]
     return len(pieces_opponent)
 
 
-def func_aval_one_move_to_win(estado: EstadoBT_40, jogador):
+def func_aval_one_move_to_win_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que valoriza uma vitória iminente
     (i.e., a uma jogada de vencer)."""
     res = 0
@@ -323,7 +323,7 @@ def func_aval_one_move_to_win(estado: EstadoBT_40, jogador):
     return res
 
 
-def func_aval_home_ground(estado: EstadoBT_40, jogador):
+def func_aval_home_ground_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que valoriza peças na primeira linha,
     e, por conseguinte, a defesa."""
     n = len(estado.board)
@@ -336,7 +336,7 @@ def func_aval_home_ground(estado: EstadoBT_40, jogador):
     return res
 
 
-def func_aval_piece_value(estado: EstadoBT_40, jogador):
+def func_aval_piece_value_40(estado: EstadoBT_40, jogador):
     """Função de avaliação que valoriza o número de
     peças amigáveis."""
     res = 0
