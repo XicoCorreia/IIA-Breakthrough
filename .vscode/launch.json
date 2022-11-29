@@ -1,14 +1,17 @@
 {
     "configurations": [
         {
-            "name": "Python: Test JogoBT",
+            "name": "Python: Corre Torneios",
             "type": "python",
             "request": "launch",
-            "module": "unittest",
+            "program": "corre_torneios.py",
             "python": "${command:python.interpreterPath}",
             "args": [
-                "jogobt_test.py"
-            ]
+                "belarmino",
+                "marco",
+                "heuracio",
+                "3"
+            ],
         }
     ],
 }
