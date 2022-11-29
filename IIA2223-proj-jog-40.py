@@ -1,10 +1,11 @@
-# pylint: disable=invalid-name missing-module-docstring missing-function-docstring
+# pylint: disable=invalid-name missing-module-docstring
 # IIA-2223
 # Autores:
 #  54685 - Francisco Correia
 #  55855 - Francisco Maia
 #  55955 - Alexandre Fonseca
 
+from jogar import JogadorAlfaBeta
 from jogos import Game
 
 
@@ -194,22 +195,10 @@ class JogoBT_40(Game):
         )
 
 
-def func_aval_belarmino(estado: EstadoBT_40, jogador):
-    res = 0
-    n = len(estado.board)
-    if jogador == JogoBT_40.WHITE:
-        for row, _ in estado.pieces[jogador - 1]:
-            x = row + 1
-            res += x**x
-    else:
-        for row, _ in estado.pieces[jogador - 1]:
-            x = n - row
-            res += x**x
-    return res
-
-
-# Nota: esta função é a função submetida no torneio (func_aval_40)
-def func_aval_heuracio(estado: EstadoBT_40, jogador):
+# Nota: esta é a função func_aval_heuracio no ficheiro IIA2223-proj-tudo-40.py.
+def func_aval_40(estado: EstadoBT_40, jogador):
+    """Função de avaliação formada a partir das
+    diversas funções de avaliação criadas."""
     res = func_aval_win(estado, jogador)
     if res > 0:
         return res
@@ -360,3 +349,15 @@ def func_aval_piece_value(estado: EstadoBT_40, jogador):
         for row, _ in pieces:
             res += n - row
     return res
+
+
+class JogadorBT_40(JogadorAlfaBeta):
+    """Classe que representa um jogador de Breakthrough
+    que usa a função de avaliação do grupo 40 no
+    algoritmo alfa-beta."""
+
+    def __init__(self, nome, depth):
+        super().__init__(nome, depth, func_aval_40)
+
+    def __str__(self) -> str:
+        return self.nome
