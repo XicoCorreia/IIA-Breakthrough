@@ -382,18 +382,3 @@ def func_aval_piece_value(estado: EstadoBT_40, jogador):
         for row, _ in pieces:
             res += n - row
     return res
-
-
-func_aval_40 = func_aval_heuracio
-
-
-class JogadorBT_40(JogadorAlfaBeta):
-    """Classe que representa um jogador de Breakthrough
-    que usa a função de avaliação do grupo 40 no
-    algoritmo alfa-beta."""
-
-    def __init__(self, nome, depth):
-        super().__init__(nome, depth, func_aval_40)
-
-    def __str__(self) -> str:
-        return self.nome
